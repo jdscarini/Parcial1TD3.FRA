@@ -1,0 +1,8 @@
+../src/pwm1_17xx_40xx.c:12:6:PWM1_SelectChannel	24	static
+../src/pwm1_17xx_40xx.c:43:6:PWM1_EnableCounters	16	static
+../src/pwm1_17xx_40xx.c:52:6:PWM1_ResetCounters	16	static
+../src/pwm1_17xx_40xx.c:67:6:PWM1_ConfigMatch	16	static
+../src/pwm1_17xx_40xx.c:79:6:PWM1_ControlChannel	16	static
+../src/pwm1_17xx_40xx.c:94:6:PWM1_SetMatch	24	static
+../src/pwm1_17xx_40xx.c:130:6:PWM1_GetMatch	24	static
+../src/pwm1_17xx_40xx.c:165:6:PWM1_ValuePrescale	16	static

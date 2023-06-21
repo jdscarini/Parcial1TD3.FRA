@@ -1,0 +1,41 @@
+C:\Users\Juan\OneDrive - UTN.BA\5to_-_TDIII\FRA\workspace\lpc_chip_175x_6x\inc/iocon_17xx_40xx.h:151:20:Chip_IOCON_Init	16	static
+C:\Users\Juan\OneDrive - UTN.BA\5to_-_TDIII\FRA\workspace\lpc_chip_175x_6x\inc/iocon_17xx_40xx.h:190:20:Chip_IOCON_EnableOD	16	static
+C:\Users\Juan\OneDrive - UTN.BA\5to_-_TDIII\FRA\workspace\lpc_chip_175x_6x\inc/iocon_17xx_40xx.h:223:20:Chip_IOCON_SetI2CPad	16	static
+C:\Users\Juan\OneDrive - UTN.BA\5to_-_TDIII\FRA\workspace\lpc_chip_175x_6x\inc/gpio_17xx_40xx.h:65:20:Chip_GPIO_Init	16	static
+C:\Users\Juan\OneDrive - UTN.BA\5to_-_TDIII\FRA\workspace\lpc_chip_175x_6x\inc/gpio_17xx_40xx.h:89:20:Chip_GPIO_SetPinState	16	static
+C:\Users\Juan\OneDrive - UTN.BA\5to_-_TDIII\FRA\workspace\lpc_chip_175x_6x\inc/gpio_17xx_40xx.h:110:20:Chip_GPIO_WritePortBit	24	static
+C:\Users\Juan\OneDrive - UTN.BA\5to_-_TDIII\FRA\workspace\lpc_chip_175x_6x\inc/gpio_17xx_40xx.h:124:20:Chip_GPIO_GetPinState	16	static
+C:\Users\Juan\OneDrive - UTN.BA\5to_-_TDIII\FRA\workspace\lpc_chip_175x_6x\inc/gpio_17xx_40xx.h:138:20:Chip_GPIO_ReadPortBit	24	static
+C:\Users\Juan\OneDrive - UTN.BA\5to_-_TDIII\FRA\workspace\lpc_chip_175x_6x\inc/gpio_17xx_40xx.h:151:20:Chip_GPIO_SetPinDIROutput	16	static
+C:\Users\Juan\OneDrive - UTN.BA\5to_-_TDIII\FRA\workspace\lpc_chip_175x_6x\inc/gpio_17xx_40xx.h:164:20:Chip_GPIO_SetPinDIRInput	16	static
+C:\Users\Juan\OneDrive - UTN.BA\5to_-_TDIII\FRA\workspace\lpc_chip_175x_6x\inc/gpio_17xx_40xx.h:178:20:Chip_GPIO_SetPinDIR	16	static
+C:\Users\Juan\OneDrive - UTN.BA\5to_-_TDIII\FRA\workspace\lpc_chip_175x_6x\inc/gpio_17xx_40xx.h:202:20:Chip_GPIO_WriteDirBit	16	static
+C:\Users\Juan\OneDrive - UTN.BA\5to_-_TDIII\FRA\workspace\lpc_chip_175x_6x\inc/uart_17xx_40xx.h:309:20:Chip_UART_SendByte	16	static
+C:\Users\Juan\OneDrive - UTN.BA\5to_-_TDIII\FRA\workspace\lpc_chip_175x_6x\inc/uart_17xx_40xx.h:322:23:Chip_UART_ReadByte	16	static
+C:\Users\Juan\OneDrive - UTN.BA\5to_-_TDIII\FRA\workspace\lpc_chip_175x_6x\inc/uart_17xx_40xx.h:405:20:Chip_UART_ConfigData	16	static
+C:\Users\Juan\OneDrive - UTN.BA\5to_-_TDIII\FRA\workspace\lpc_chip_175x_6x\inc/uart_17xx_40xx.h:492:24:Chip_UART_ReadLineStatus	16	static
+c:\nxp\mcuxpressoide_11.7.1_9221\ide\plugins\com.nxp.mcuxpresso.tools.win32_11.7.1.202301190959\tools\redlib\include\sys\libconfig-arm.h:247:5:__sys_write	32	static
+c:\nxp\mcuxpressoide_11.7.1_9221\ide\plugins\com.nxp.mcuxpresso.tools.win32_11.7.1.202301190959\tools\redlib\include\sys\libconfig-arm.h:241:5:__sys_readc	16	static
+../src/board.c:72:13:Board_LED_Init	8	static
+../src/board.c:93:6:Board_UART_Init	16	static
+../src/board.c:99:6:Board_Debug_Init	8	static
+../src/board.c:115:6:Board_UARTPutChar	16	static
+../src/board.c:126:5:Board_UARTGetChar	8	static
+../src/board.c:138:6:Board_UARTPutSTR	16	static
+../src/board.c:149:6:Board_LED_Set	16	static
+../src/board.c:170:6:Board_LED_Test	24	static
+../src/board.c:193:6:Board_LED_Toggle	16	static
+../src/board.c:203:6:Board_Init	8	static
+../src/board.c:217:6:Board_ENET_GetMacADDR	24	static
+../src/board.c:226:6:Board_SSP_Init	24	static
+../src/board.c:261:6:Board_SPI_Init	24	static
+../src/board.c:288:6:Board_SPI_AssertSSEL	8	static
+../src/board.c:294:6:Board_SPI_DeassertSSEL	8	static
+../src/board.c:299:6:Board_Audio_Init	24	static
+../src/board.c:313:6:Board_I2C_Init	24	static
+../src/board.c:339:6:Board_Buttons_Init	8	static
+../src/board.c:345:10:Buttons_GetStatus	16	static
+../src/board.c:381:6:Board_Joystick_Init	16	static
+../src/board.c:394:9:Joystick_GetStatus	16	static
+../src/board.c:410:6:Serial_CreateStream	16	static
+../src/board.c:414:6:Board_USBD_Init	24	static
