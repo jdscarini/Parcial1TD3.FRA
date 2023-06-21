@@ -13,9 +13,11 @@ C:\Users\Juan\OneDrive - UTN.BA\5to_-_TDIII\FRA\workspace\lpc_chip_175x_6x\inc/t
 C:\Users\Juan\OneDrive - UTN.BA\5to_-_TDIII\FRA\workspace\lpc_chip_175x_6x\inc/timer_17xx_40xx.h:229:24:Chip_TIMER_ReadCapture	16	static
 C:\Users\Juan\OneDrive - UTN.BA\5to_-_TDIII\FRA\workspace\lpc_chip_175x_6x\inc/timer_17xx_40xx.h:344:20:Chip_TIMER_CaptureFallingEdgeEnable	16	static
 C:\Users\Juan\OneDrive - UTN.BA\5to_-_TDIII\FRA\workspace\lpc_chip_175x_6x\inc/timer_17xx_40xx.h:370:20:Chip_TIMER_CaptureEnableInt	16	static
-../sources/src/main.c:55:13:prvSetupHardware	8	static
-../sources/src/main.c:68:13:vGiro_Task	72	static
-../sources/src/main.c:150:13:vPulsos_Task	160	static
-../sources/src/main.c:213:13:vLCD_Task	32	static
-../sources/src/main.c:255:5:main	16	static
-../sources/src/main.c:277:6:TIMER3_IRQHandler	16	static
+../sources/src/main.c:61:13:prvSetupHardware	8	static
+../sources/src/main.c:73:14:actualizarVelocidad	32	static
+../sources/src/main.c:91:13:vGiro_Task	88	static
+../sources/src/main.c:292:13:vPulsos_Task	160	static
+../sources/src/main.c:352:13:vLCD_Task	32	static
+../sources/src/main.c:378:13:vPulsadores_Task	24	static
+../sources/src/main.c:399:5:main	16	static
+../sources/src/main.c:424:6:TIMER3_IRQHandler	16	static
