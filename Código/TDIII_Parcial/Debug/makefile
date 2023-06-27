@@ -42,7 +42,7 @@ main-build: TDIII_Parcial.axf
 TDIII_Parcial.axf: $(OBJS) $(USER_OBJS) makefile $(OPTIONAL_TOOL_DEPS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: MCU Linker'
-	arm-none-eabi-gcc -nostdlib -L"C:\Users\Juan\OneDrive - UTN.BA\5to_-_TDIII\FRA\workspace\lpc_chip_175x_6x\Debug" -L"C:\Users\Juan\OneDrive - UTN.BA\5to_-_TDIII\FRA\workspace\lpc_board_nxp_lpcxpresso_1769\Debug" -Xlinker -Map="TDIII_Parcial.map" -Xlinker --gc-sections -mcpu=cortex-m3 -mthumb -T TDIII_Parcial_Debug.ld -o "TDIII_Parcial.axf" $(OBJS) $(USER_OBJS) $(LIBS) -llpc_board_nxp_lpcxpresso_1769 -llpc_chip_175x_6x
+	arm-none-eabi-gcc -nostdlib -L"C:\Users\Juan Diego\OneDrive - UTN.BA\5to_-_TDIII\FRA\workspace\lpc_chip_175x_6x\Debug" -L"C:\Users\Juan Diego\OneDrive - UTN.BA\5to_-_TDIII\FRA\workspace\lpc_board_nxp_lpcxpresso_1769\Debug" -Xlinker -Map="TDIII_Parcial.map" -Xlinker --gc-sections -mcpu=cortex-m3 -mthumb -T TDIII_Parcial_Debug.ld -o "TDIII_Parcial.axf" $(OBJS) $(USER_OBJS) $(LIBS) -llpc_board_nxp_lpcxpresso_1769 -llpc_chip_175x_6x
 	@echo 'Finished building target: $@'
 	@echo ' '
 
