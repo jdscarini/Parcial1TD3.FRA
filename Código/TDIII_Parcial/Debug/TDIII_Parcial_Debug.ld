@@ -6,7 +6,7 @@
  * Generated linker script file for LPC1769
  * Created from linkscript.ldt by FMCreateLinkLibraries
  * Using Freemarker v2.3.30
- * MCUXpresso IDE v11.7.1 [Build 9221] [2023-03-28] on 26 jun. 2023 21:42:32
+ * MCUXpresso IDE v11.3.0 [Build 5222] [2021-01-11] on 28/06/2023 18:15:44
  */
 
 INCLUDE "TDIII_Parcial_Debug_library.ld"
@@ -44,6 +44,10 @@ SECTIONS
 
         *(.after_vectors*)
 
+    } > MFlash512
+
+    .text : ALIGN(4)
+    {
        *(.text*)
        *(.rodata .rodata.* .constdata .constdata.*)
        . = ALIGN(4);
@@ -167,9 +171,7 @@ SECTIONS
        PROVIDE(__end_noinit_RAM = .) ;
        PROVIDE(__end_noinit_RamLoc32 = .) ;        
     } > RamLoc32 AT> RamLoc32
-
     PROVIDE(_pvHeapStart = DEFINED(__user_heap_base) ? __user_heap_base : .);
-
     PROVIDE(_vStackTop = DEFINED(__user_stack_top) ? __user_stack_top : __top_RamLoc32 - 0);
 
     /* ## Create checksum value (used in startup) ## */
