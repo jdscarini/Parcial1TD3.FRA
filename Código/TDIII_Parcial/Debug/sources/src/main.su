@@ -1,0 +1,28 @@
+C:\Users\Juan Diego\OneDrive - UTN.BA\5to_-_TDIII\FRA\workspace\lpc_chip_175x_6x\inc/core_cm3.h:1323:22:NVIC_EnableIRQ	16	static
+C:\Users\Juan Diego\OneDrive - UTN.BA\5to_-_TDIII\FRA\workspace\lpc_chip_175x_6x\inc/core_cm3.h:1335:22:NVIC_DisableIRQ	16	static
+C:\Users\Juan Diego\OneDrive - UTN.BA\5to_-_TDIII\FRA\workspace\lpc_chip_175x_6x\inc/core_cm3.h:1375:22:NVIC_ClearPendingIRQ	16	static
+C:\Users\Juan Diego\OneDrive - UTN.BA\5to_-_TDIII\FRA\workspace\lpc_chip_175x_6x\inc/gpio_17xx_40xx.h:89:20:Chip_GPIO_SetPinState	16	static
+C:\Users\Juan Diego\OneDrive - UTN.BA\5to_-_TDIII\FRA\workspace\lpc_chip_175x_6x\inc/gpio_17xx_40xx.h:151:20:Chip_GPIO_SetPinDIROutput	16	static
+C:\Users\Juan Diego\OneDrive - UTN.BA\5to_-_TDIII\FRA\workspace\lpc_chip_175x_6x\inc/gpio_17xx_40xx.h:164:20:Chip_GPIO_SetPinDIRInput	16	static
+C:\Users\Juan Diego\OneDrive - UTN.BA\5to_-_TDIII\FRA\workspace\lpc_chip_175x_6x\inc/gpio_17xx_40xx.h:178:20:Chip_GPIO_SetPinDIR	16	static
+C:\Users\Juan Diego\OneDrive - UTN.BA\5to_-_TDIII\FRA\workspace\lpc_chip_175x_6x\inc/gpio_17xx_40xx.h:245:20:Chip_GPIO_SetDir	24	static
+C:\Users\Juan Diego\OneDrive - UTN.BA\5to_-_TDIII\FRA\workspace\lpc_chip_175x_6x\inc/gpioint_17xx_40xx.h:80:20:Chip_GPIOINT_Init	16	static
+C:\Users\Juan Diego\OneDrive - UTN.BA\5to_-_TDIII\FRA\workspace\lpc_chip_175x_6x\inc/gpioint_17xx_40xx.h:106:20:Chip_GPIOINT_SetIntFalling	24	static
+C:\Users\Juan Diego\OneDrive - UTN.BA\5to_-_TDIII\FRA\workspace\lpc_chip_175x_6x\inc/gpioint_17xx_40xx.h:168:24:Chip_GPIOINT_GetStatusFalling	16	static
+C:\Users\Juan Diego\OneDrive - UTN.BA\5to_-_TDIII\FRA\workspace\lpc_chip_175x_6x\inc/gpioint_17xx_40xx.h:199:20:Chip_GPIOINT_ClearIntStatus	24	static
+C:\Users\Juan Diego\OneDrive - UTN.BA\5to_-_TDIII\FRA\workspace\lpc_chip_175x_6x\inc/timer_17xx_40xx.h:124:20:Chip_TIMER_CapturePending	16	static
+C:\Users\Juan Diego\OneDrive - UTN.BA\5to_-_TDIII\FRA\workspace\lpc_chip_175x_6x\inc/timer_17xx_40xx.h:148:20:Chip_TIMER_ClearCapture	16	static
+C:\Users\Juan Diego\OneDrive - UTN.BA\5to_-_TDIII\FRA\workspace\lpc_chip_175x_6x\inc/timer_17xx_40xx.h:159:20:Chip_TIMER_Enable	16	static
+C:\Users\Juan Diego\OneDrive - UTN.BA\5to_-_TDIII\FRA\workspace\lpc_chip_175x_6x\inc/timer_17xx_40xx.h:204:20:Chip_TIMER_PrescaleSet	16	static
+C:\Users\Juan Diego\OneDrive - UTN.BA\5to_-_TDIII\FRA\workspace\lpc_chip_175x_6x\inc/timer_17xx_40xx.h:229:24:Chip_TIMER_ReadCapture	16	static
+C:\Users\Juan Diego\OneDrive - UTN.BA\5to_-_TDIII\FRA\workspace\lpc_chip_175x_6x\inc/timer_17xx_40xx.h:344:20:Chip_TIMER_CaptureFallingEdgeEnable	16	static
+C:\Users\Juan Diego\OneDrive - UTN.BA\5to_-_TDIII\FRA\workspace\lpc_chip_175x_6x\inc/timer_17xx_40xx.h:370:20:Chip_TIMER_CaptureEnableInt	16	static
+../sources/src/main.c:71:13:prvSetupHardware	8	static
+../sources/src/main.c:83:14:actualizarVelocidad	32	static
+../sources/src/main.c:101:13:vGiro_Task	88	static
+../sources/src/main.c:302:13:vPulsos_Task	160	static
+../sources/src/main.c:368:13:vLCD_Task	32	static
+../sources/src/main.c:394:13:vPulsadores_Task	32	static
+../sources/src/main.c:430:5:main	16	static
+../sources/src/main.c:455:6:TIMER3_IRQHandler	16	static
+../sources/src/main.c:476:6:EINT3_IRQHandler	24	static

@@ -33,9 +33,19 @@
 #define GIRO_FSM_S3		3
 #define GIRO_FSM_S4		4
 
+#define BOTON1		0,27
+#define BOTON2		0,28
+#define BOTON1_PORT	0
+#define BOTON1_PIN	27
+#define BOTON2_PORT	0
+#define BOTON2_PIN	28
+
+
 #define pulsosPorVuelta	10
 #define timeMaxQueuePulsos	20 //Lo mínimo que puedo medir son xx RPM
 #define muestrasPromedio	20
+
+#define divisorRPM	10
 //Agregar define i2c i2c3
 
 typedef struct LCD_t {
@@ -298,6 +308,7 @@ static void vPulsos_Task(void *pvParameters) {
 	LCD_Struct datosLcd;
 	uint32_t timerFreq;
 	char mensaje[16] = {' '};
+	unsigned int counterLCD = 0;
 
 	Chip_Clock_SetPCLKDiv(SYSCTL_PCLK_TIMER3, SYSCTL_CLKDIV_1);
 	Chip_TIMER_Init(LPC_TIMER3);
@@ -340,9 +351,14 @@ static void vPulsos_Task(void *pvParameters) {
 		i++;
 		if (i >= muestrasPromedio) {
 			i = 0;
-			sprintf(mensaje, "RPM:%d     ", aux);
-			datosLcd.mensaje = mensaje;
-			xQueueSend(xQueueLCD, &datosLcd, 0);
+			counterLCD++;
+			if(counterLCD > (rpm[i]/divisorRPM)){
+				sprintf(mensaje, "RPM:%d     ", aux);
+							datosLcd.mensaje = mensaje;
+							xQueueSend(xQueueLCD, &datosLcd, 0);
+							counterLCD = 0;
+			}
+
 
 		}
 
@@ -378,12 +394,27 @@ static void vLCD_Task(void *pvParameters) {
 static void vPulsadores_Task (void *pvParameters) {
 	int sentidoDeGiro = 1;
 
+	Chip_GPIOINT_Init(LPC_GPIOINT);
+
+	Chip_IOCON_PinMux(LPC_IOCON,BOTON1, IOCON_MODE_PULLUP,IOCON_FUNC0);
+	Chip_IOCON_PinMux(LPC_IOCON,BOTON2, IOCON_MODE_PULLUP,IOCON_FUNC0);
+	Chip_GPIO_SetPinDIRInput(LPC_GPIO, BOTON2);
+	Chip_GPIO_SetPinDIRInput(LPC_GPIO, BOTON1);
+
+	//Chip_GPIOINT_SetIntFalling(LPC_GPIOINT,BOTON1_PORT, 1<<BOTON1_PIN);
+	Chip_GPIOINT_SetIntFalling(LPC_GPIOINT,BOTON2_PORT, (1<<BOTON1_PIN| 1<<BOTON2_PIN));
+
+	NVIC_ClearPendingIRQ(EINT3_IRQn);
+	NVIC_EnableIRQ(EINT3_IRQn);
+
+
+
 	while (1)
 	{
 		vTaskDelay(5000);
 		sentidoDeGiro++;
 		if(sentidoDeGiro > 2) sentidoDeGiro = 1;
-		xQueueSend(xQueueGiro,&sentidoDeGiro,0);
+		//xQueueSend(xQueueGiro,&sentidoDeGiro,0);
 	}
 
 }
@@ -424,15 +455,55 @@ int main(void) {
 void TIMER3_IRQHandler(void)
 {
 	unsigned int captura = 0;
+	portBASE_TYPE HigherPriorityTaskWoken = 0;
 	Chip_TIMER_Reset(LPC_TIMER3);
-	if (Chip_TIMER_CapturePending(LPC_TIMER3, 1)) {
-		captura = Chip_TIMER_ReadCapture(LPC_TIMER3,1);
+	if (Chip_TIMER_CapturePending(LPC_TIMER3, 1))
+	{
+		captura = Chip_TIMER_ReadCapture(LPC_TIMER3, 1);
 		Chip_TIMER_ClearCapture(LPC_TIMER3, 1);
 
 		NVIC_ClearPendingIRQ(TIMER3_IRQn);
-		//todo: pasar a  send from ISR.
-		xQueueSend(xQueueCapture,&captura,0);
+				xQueueSendFromISR(xQueueCapture, &captura, &HigherPriorityTaskWoken);
 	}
+	if (HigherPriorityTaskWoken)
+	{
+		/* Actual macro used here is port specific. */
+		portEND_SWITCHING_ISR(HigherPriorityTaskWoken);
+	}
+
+}
+
+void EINT3_IRQHandler(void)
+{
+	int Pines_IRQ = 0;
+	portBASE_TYPE HigherPriorityTaskWoken = 0;
+	int sentidoDeGiro = 0;
+	Pines_IRQ = Chip_GPIOINT_GetStatusFalling(LPC_GPIOINT, BOTON1_PORT);
+	if (Pines_IRQ & (1 << BOTON1_PIN))
+	{
+		Chip_GPIOINT_ClearIntStatus(LPC_GPIOINT, BOTON1_PORT, 1 << BOTON1_PIN);
+		//xQueueSend(xQueueGiro,&sentidoDeGiro,0);
+		sentidoDeGiro = 1;
+		xQueueSendFromISR(xQueueGiro, &sentidoDeGiro, &HigherPriorityTaskWoken);
+	}
+	else if (Pines_IRQ & (1 << BOTON2_PIN))
+	{
+		Chip_GPIOINT_ClearIntStatus(LPC_GPIOINT, BOTON2_PORT, 1 << BOTON2_PIN);
+		sentidoDeGiro = 2;
+		xQueueSendFromISR(xQueueGiro, &sentidoDeGiro, &HigherPriorityTaskWoken);
+	}
+	else
+	{
+		//Limpio todas IRQ
+		Chip_GPIOINT_ClearIntStatus(LPC_GPIOINT, 0, Pines_IRQ);
+	}
+	NVIC_ClearPendingIRQ(EINT3_IRQn);
+	if (HigherPriorityTaskWoken)
+	{
+		/* Actual macro used here is port specific. */
+		portEND_SWITCHING_ISR(HigherPriorityTaskWoken);
+	}
+
 }
 /**
  * @}
