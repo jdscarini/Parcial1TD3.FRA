@@ -16,8 +16,8 @@
 
 #define pulsosPorVuelta			12	//Cantidad de pulsos del encoder
 #define timeMaxQueuePulsos		20 	//Lo mínimo que puedo medir son xx RPM
-#define muestrasPromedio		24 	//promedio las ultimas 2 vueltas
-#define ticksEsperaLCD 			200	//Tiempo de refresco del display.
+#define muestrasPromedio		240 	//promedio las ultimas 2 vueltas
+#define ticksEsperaLCD 			1000	//Tiempo de refresco del display.
 
 /************************
  * Definiciones para máquina de estados
@@ -59,7 +59,8 @@
 /**************
  * Definiciones de estructura envío de cola LCD
  */
-typedef struct LCD_t {
+typedef struct LCD_t
+{
 	char *mensaje;
 	unsigned int linea;
 	unsigned int posicion;
@@ -77,7 +78,8 @@ xQueueHandle xQueueVelocidad;
  ****************************************************************************/
 
 /* Sets up system hardware */
-static void prvSetupHardware(void) {
+static void prvSetupHardware(void)
+{
 	SystemCoreClockUpdate();
 	Board_Init();
 
@@ -89,29 +91,41 @@ static void prvSetupHardware(void) {
 	Chip_GPIO_SetPinDIRInput(LPC_GPIO, PULS_EXT_1);
 }
 
+/*
+ * actualValue = cuentas actuales del ADC
+ * lastValue = cuentas anteriores del ADC
+ * clockPwm = Tick maximos del pwm.
+ */
+
 unsigned int actualizarVelocidad(unsigned int actualValue,
-		unsigned int lastValue, unsigned int clockPwm) {
+		unsigned int lastValue, unsigned int clockPwm)
+{
 	unsigned int aux = 0;
-	if (actualValue > lastValue + 2 || actualValue < lastValue - 2) {
-		/*comparo si vario el PWM + de 1%*/
-		aux = actualValue * 100 / 4096;
-		LPC_PWM1->MR1 = actualValue * clockPwm / 4096;
-		LPC_PWM1->LER = (1 << 0) | (1 << 1);
+	if (actualValue > lastValue + 2 || actualValue < lastValue - 2)
+	{
+		/* comparo si vario el PWM + de 2 cuentas */
+		aux = actualValue * 100 / 4096; //Regla de 3 para llevar a escala 0-100%
+		LPC_PWM1->MR1 = (actualValue * clockPwm / 4096); // Regla de 3 para llevar a escala PWM
+		LPC_PWM1->LER = (1 << 0) | (1 << 1); // Configuro latch PWM.
 	}
 	return aux;
 }
 
 /* LED1 toggle thread */
-static void vGiro_Task(void *pvParameters) {
+static void vGiro_Task(void *pvParameters)
+{
 	unsigned int clockPwm = 0;
 	//unsigned int asereje = 10;
 	unsigned int estadoActual = 1;
 	char mensaje[16] = { ' ' };
+	char msg2[16] = { ' ' };
 	LCD_Struct dataLCD;
-	char *msg = "            ";
-	dataLCD.mensaje = msg;
+	//char *msg = "                ";
+	//char *msg2 = "                ";
+	//dataLCD.mensaje = msg;
 	dataLCD.linea = 0;
 	dataLCD.posicion = 0;
+
 	uint16_t adcValue = 2000, lastAdc = 0;
 	static ADC_CLOCK_SETUP_T ADCSetup;
 	unsigned int sentidoDeGiro = 0;
@@ -145,128 +159,207 @@ static void vGiro_Task(void *pvParameters) {
 	/* Enable the PWM output pins for PWM_1-PWM_4(P2_0 - P2_3) */
 	LPC_PWM1->PCR = (1 << 9); // | (1 << 13) | (1 << 14);
 
-	while (1) {
+	//Configuro pulsadores
+	Chip_GPIOINT_Init(LPC_GPIOINT);
+
+	Chip_IOCON_PinMux(LPC_IOCON, BOTON1, IOCON_MODE_PULLUP, IOCON_FUNC0);
+	Chip_IOCON_PinMux(LPC_IOCON, BOTON2, IOCON_MODE_PULLUP, IOCON_FUNC0);
+	Chip_GPIO_SetPinDIRInput(LPC_GPIO, BOTON2);
+	Chip_GPIO_SetPinDIRInput(LPC_GPIO, BOTON1);
+
+	Chip_GPIOINT_SetIntFalling(LPC_GPIOINT, BOTON2_PORT,
+			(1 << BOTON1_PIN | 1 << BOTON2_PIN));
+
+	NVIC_ClearPendingIRQ(EINT3_IRQn);
+	NVIC_EnableIRQ(EINT3_IRQn);
+
+	while (1)
+	{
 		lastAdc = adcValue;
 
 		//recibo velocidad por cola.
-		if (pdPASS != xQueueReceive(xQueueVelocidad, &velocidadActual, 0)) {
+		if (pdPASS != xQueueReceive(xQueueVelocidad, &velocidadActual, 0))
+		{
 			//No pude actualizar velocidad, asumo que la velocidad no vario.
 			velocidadActual = velocidadActual;
 		}
 		//recibo sentido de giro por cola.
-		if (pdPASS == xQueueReceive(xQueueGiro, &sentidoDeGiro, 0)) {
-			if (sentidoDeGiro == 1) {
+		if (pdPASS == xQueueReceive(xQueueGiro, &sentidoDeGiro, 0))
+		{
+			if (sentidoDeGiro == 1)
+			{
 				solicitudGiroDer = 1;
 				solicitudGiroIzq = 0;
-			} else if (sentidoDeGiro == 2) {
+			}
+			else if (sentidoDeGiro == 2)
+			{
 				solicitudGiroDer = 0;
 				solicitudGiroIzq = 1;
 			}
 		}
 		//Máquina de estados para control de giro
-		switch (estadoActual) {
+		switch (estadoActual)
+		{
 		default:
 		case GIRO_FSM_S1:
-			if (solicitudGiroDer == 1) {
-				if (velocidadActual == 0) {
+			if (solicitudGiroDer == 1)
+			{
+				if (velocidadActual == 0)
+				{
+					//Ya que velocidad == 0, cambio de giro directamente
 					estadoActual = GIRO_FSM_S3;
 					Chip_GPIO_SetPinState(LPC_GPIO, GIRO_DER, 1);
 					Chip_GPIO_SetPinState(LPC_GPIO, GIRO_IZQ, 0);
-				} else {
+					dataLCD.linea = 1;
+					dataLCD.posicion = 0;
+					sprintf(msg2, "Giro Derecha  ");
+					dataLCD.mensaje = msg2;
+					xQueueSend(xQueueLCD, &dataLCD, portMAX_DELAY);
+
+				}
+				else
+				{
+					//Si velocidad != 0, pongo pwm en 0
 					estadoActual = GIRO_FSM_S2;
+					dataLCD.linea = 1;
+					dataLCD.posicion = 0;
+					sprintf(msg2, "Deteniendo    ");
+					dataLCD.mensaje = msg2;
+					xQueueSend(xQueueLCD, &dataLCD, portMAX_DELAY);
+
 					adcValue = 0;
 					velocidadResultante = actualizarVelocidad(adcValue, lastAdc,
 							clockPwm);
-					if (velocidadResultante != 0) {
-						dataLCD.linea = 0;
-						dataLCD.posicion = 0;
-						sprintf(mensaje, "PWM:%d ", velocidadResultante);
-						dataLCD.mensaje = mensaje;
-						xQueueSend(xQueueLCD, &dataLCD, 10);
-					}
 
+					dataLCD.linea = 0;
+					dataLCD.posicion = 0;
+					sprintf(mensaje, "PWM:OFF");
+					dataLCD.mensaje = mensaje;
+					xQueueSend(xQueueLCD, &dataLCD, 10);
+
+					//Apago sentido de giro
 					Chip_GPIO_SetPinState(LPC_GPIO, GIRO_DER, 0);
 					Chip_GPIO_SetPinState(LPC_GPIO, GIRO_IZQ, 0);
 				}
 				solicitudGiroDer = 0;
-			} else {
-				estadoActual = GIRO_FSM_S1;
+			}
+			else
+			{
+				estadoActual = GIRO_FSM_S1; //continuo en el estado actual
 				while (Chip_ADC_ReadStatus(LPC_ADC, ADC_CHANNEL,
-						ADC_DR_DONE_STAT) != SET) {
+						ADC_DR_DONE_STAT) != SET)
+				{
+					//Espero que termine de convertir el ADC
 				}
+				//Leo el ADC
 				Chip_ADC_ReadValue(LPC_ADC, ADC_CHANNEL, &adcValue);
+
+				//Actualizo velocidad en pwm y en lcd
 				velocidadResultante = actualizarVelocidad(adcValue, lastAdc,
 						clockPwm);
-				if (velocidadResultante != 0) {
+				if (velocidadResultante != 0)
+				{
 					dataLCD.linea = 0;
 					dataLCD.posicion = 0;
-					sprintf(mensaje, "PWM:%d ", velocidadResultante);
+					sprintf(mensaje, "PWM:%d%% ", velocidadResultante);
 					dataLCD.mensaje = mensaje;
 					xQueueSend(xQueueLCD, &dataLCD, 10);
 				}
-
+				//Me aseguro girar el sentido de giro
 				Chip_GPIO_SetPinState(LPC_GPIO, GIRO_DER, 0);
 				Chip_GPIO_SetPinState(LPC_GPIO, GIRO_IZQ, 1);
 				solicitudGiroIzq = 0;
 			}
 			break;
 		case GIRO_FSM_S2:
-			if (velocidadActual == 0) {
+			if (velocidadActual == 0)
+			{
+				//como esta detenido pasa al estado s3, seteando el sentido de giro
 				estadoActual = GIRO_FSM_S3;
+
+				dataLCD.linea = 1;
+				dataLCD.posicion = 0;
+				sprintf(msg2, "Giro Derecha  ");
+				dataLCD.mensaje = msg2;
+				xQueueSend(xQueueLCD, &dataLCD, portMAX_DELAY);
 				Chip_GPIO_SetPinState(LPC_GPIO, GIRO_DER, 1);
 				Chip_GPIO_SetPinState(LPC_GPIO, GIRO_IZQ, 0);
-			} else {
+			}
+			else
+			{
+				// reasegura el estado actual
 				estadoActual = GIRO_FSM_S2;
+				// Apaga el pwm y actualiza display
 				adcValue = 0;
 				velocidadResultante = actualizarVelocidad(adcValue, lastAdc,
 						clockPwm);
-				if (velocidadResultante != 0) {
-					dataLCD.linea = 0;
-					dataLCD.posicion = 0;
-					sprintf(mensaje, "PWM:%d ", velocidadResultante);
-					dataLCD.mensaje = mensaje;
-					xQueueSend(xQueueLCD, &dataLCD, 10);
-				}
+				dataLCD.linea = 0;
+				dataLCD.posicion = 0;
+				sprintf(mensaje, "PWM:OFF");
+				dataLCD.mensaje = mensaje;
+				xQueueSend(xQueueLCD, &dataLCD, 10);
 
 				Chip_GPIO_SetPinState(LPC_GPIO, GIRO_DER, 0);
 				Chip_GPIO_SetPinState(LPC_GPIO, GIRO_IZQ, 0);
 			}
 			break;
 		case GIRO_FSM_S3:
-			if (solicitudGiroIzq == 1) {
-				if (velocidadActual == 0) {
+			if (solicitudGiroIzq == 1)
+			{
+				//Controlo velocidad
+				if (velocidadActual == 0)
+				{
+					//Si se encuentra detenido, cambio directo
 					estadoActual = GIRO_FSM_S1;
+					dataLCD.linea = 1;
+					dataLCD.posicion = 0;
+					sprintf(msg2, "Giro Izquierda");
+					dataLCD.mensaje = msg2;
+					xQueueSend(xQueueLCD, &dataLCD, portMAX_DELAY);
+
 					Chip_GPIO_SetPinState(LPC_GPIO, GIRO_DER, 0);
 					Chip_GPIO_SetPinState(LPC_GPIO, GIRO_IZQ, 1);
-				} else {
+				}
+				else
+				{
+					//Apago el motor encaso de que siga girando. Cambio a S4.
 					estadoActual = GIRO_FSM_S4;
+					dataLCD.linea = 1;
+					dataLCD.posicion = 0;
+					sprintf(msg2, "Deteniendo    ");
+					dataLCD.mensaje = msg2;
+					xQueueSend(xQueueLCD, &dataLCD, portMAX_DELAY);
 					adcValue = 0;
 					velocidadResultante = actualizarVelocidad(adcValue, lastAdc,
 							clockPwm);
-					if (velocidadResultante != 0) {
-						dataLCD.linea = 0;
-						dataLCD.posicion = 0;
-						sprintf(mensaje, "PWM:%d ", velocidadResultante);
-						dataLCD.mensaje = mensaje;
-						xQueueSend(xQueueLCD, &dataLCD, 10);
-					}
+					dataLCD.linea = 0;
+					dataLCD.posicion = 0;
+					sprintf(mensaje, "PWM:OFF ");
+					dataLCD.mensaje = mensaje;
+					xQueueSend(xQueueLCD, &dataLCD, 10);
 
 					Chip_GPIO_SetPinState(LPC_GPIO, GIRO_DER, 0);
 					Chip_GPIO_SetPinState(LPC_GPIO, GIRO_IZQ, 0);
 				}
 				solicitudGiroIzq = 0;
-			} else {
+			}
+			else
+			{
 				estadoActual = GIRO_FSM_S3;
+				//Como no tengo solicitud de giro, actualizo el ADC
 				while (Chip_ADC_ReadStatus(LPC_ADC, ADC_CHANNEL,
-						ADC_DR_DONE_STAT) != SET) {
+						ADC_DR_DONE_STAT) != SET)
+				{
 				}
 				Chip_ADC_ReadValue(LPC_ADC, ADC_CHANNEL, &adcValue);
+				// actualizo el lcd con lo que medi en el ADC.
 				velocidadResultante = actualizarVelocidad(adcValue, lastAdc,
 						clockPwm);
-				if (velocidadResultante != 0) {
+				if (velocidadResultante != 0)
+				{
 					dataLCD.linea = 0;
 					dataLCD.posicion = 0;
-					sprintf(mensaje, "PWM:%d ", velocidadResultante);
+					sprintf(mensaje, "PWM:%d%% ", velocidadResultante);
 					dataLCD.mensaje = mensaje;
 					xQueueSend(xQueueLCD, &dataLCD, 10);
 				}
@@ -277,22 +370,29 @@ static void vGiro_Task(void *pvParameters) {
 			}
 			break;
 		case GIRO_FSM_S4:
-			if (velocidadActual == 0) {
+			//IDEM Estado 2
+			if (velocidadActual == 0)
+			{
 				estadoActual = GIRO_FSM_S1;
+				dataLCD.linea = 1;
+				dataLCD.posicion = 0;
+				sprintf(msg2, "Giro Izquierda");
+				dataLCD.mensaje = msg2;
+				xQueueSend(xQueueLCD, &dataLCD, portMAX_DELAY);
 				Chip_GPIO_SetPinState(LPC_GPIO, GIRO_DER, 0);
 				Chip_GPIO_SetPinState(LPC_GPIO, GIRO_IZQ, 1);
-			} else {
+			}
+			else
+			{
 				estadoActual = GIRO_FSM_S4;
 				adcValue = 0;
 				velocidadResultante = actualizarVelocidad(adcValue, lastAdc,
 						clockPwm);
-				if (velocidadResultante != 0) {
-					dataLCD.linea = 0;
-					dataLCD.posicion = 0;
-					sprintf(mensaje, "PWM:%d ", velocidadResultante);
-					dataLCD.mensaje = mensaje;
-					xQueueSend(xQueueLCD, &dataLCD, 10);
-				}
+				dataLCD.linea = 0;
+				dataLCD.posicion = 0;
+				sprintf(mensaje, "PWM:OFF ");
+				dataLCD.mensaje = mensaje;
+				xQueueSend(xQueueLCD, &dataLCD, 10);
 
 				Chip_GPIO_SetPinState(LPC_GPIO, GIRO_DER, 0);
 				Chip_GPIO_SetPinState(LPC_GPIO, GIRO_IZQ, 0);
@@ -307,14 +407,17 @@ static void vGiro_Task(void *pvParameters) {
 }
 
 /* LED2 toggle thread */
-static void vPulsos_Task(void *pvParameters) {
+static void vPulsos_Task(void *pvParameters)
+{
 	unsigned int captura;
-	unsigned int rpm[muestrasPromedio] = { 0 }; //Guardo un array por si necesito hacer promedio.
+	unsigned int rpm[muestrasPromedio] =
+	{ 0 }; //Guardo un array por si necesito hacer promedio.
 	unsigned int frecVuelta = 10;
 	unsigned int i = 0, ii = 0, aux = 0;
 	LCD_Struct datosLcd;
 	uint32_t timerFreq;
-	char mensaje[16] = { ' ' };
+	char mensaje[16] =
+	{ ' ' };
 	TickType_t xLastWakeTime = 0;
 
 	//Configuro timer para tomar muestras por interrupcion. En modo Input Capture
@@ -331,49 +434,57 @@ static void vPulsos_Task(void *pvParameters) {
 	//Configuro pin del timer como funcion timer.
 	Chip_IOCON_PinMux(LPC_IOCON, 0, 24, IOCON_MODE_PULLUP, IOCON_FUNC3);
 
-	while (1) {
+	while (1)
+	{
 
-		if (xQueueReceive(xQueueCapture, &captura, timeMaxQueuePulsos) == pdPASS) //Si recibe pulsos antes del tiempo estamos a más de 60 RPM.
+		if (xQueueReceive(xQueueCapture, &captura, timeMaxQueuePulsos) == pdPASS) //Se fija si recibe pulsos antes de timeMaxQueuePulsos
 		{
-
-			frecVuelta = timerFreq / captura;
-			rpm[i] = (frecVuelta * 10 / pulsosPorVuelta)*6;
-		} else {
+			//Si pudo recibir, hace la conversion a RPM y la guarda en el vector
+			frecVuelta = timerFreq / captura; //Calculo frecuencia de los pulsos
+			rpm[i] = (frecVuelta * 10 / pulsosPorVuelta) * 6; //Convierto a frecuencia de vuelta y luego a RPM
+		}
+		else
+		{
+			//Si no pudo recibir pulsos en la ventana temporal, asume que rpm = 0
 			rpm[i] = 0;
-			//captura = 0;
-			//debería resetear el timer si no llega el pulso? Probemos.
-
 		}
 
-		xQueueSend(xQueueVelocidad, &rpm[i], 0);
+		xQueueSend(xQueueVelocidad, &rpm[i], 0); //Envia por cola el ultimo valor medido de rpm
 
-		if ((xLastWakeTime + ticksEsperaLCD) <= xTaskGetTickCount()) {
-			xLastWakeTime = xTaskGetTickCount();
+		if ((xLastWakeTime + ticksEsperaLCD) <= xTaskGetTickCount()) //Controla el tiempo de actualizacion del display
+		{
+			xLastWakeTime = xTaskGetTickCount(); //Actualizo ultimo valor de envio de display
+			//posiciona cursor LCD
 			datosLcd.linea = 0;
 			datosLcd.posicion = 8;
 			aux = 0;
-			for (ii = 0; ii < muestrasPromedio; ii++) {
+			for (ii = 0; ii < muestrasPromedio; ii++)
+			{
 				aux += rpm[ii];
 			}
-			aux = aux / muestrasPromedio;
+			aux = aux / muestrasPromedio;		//Realiza promedio de muestras
 
-			sprintf(mensaje, "RPM:%d     ", rpm[i]);
+			sprintf(mensaje, "RPM:%d     ", aux);
 			datosLcd.mensaje = mensaje;
+			//Envia el dato a imprimir por cola al LCD
 			xQueueSend(xQueueLCD, &datosLcd, 0);
 		}
 
-		i++;
-		if (i >= muestrasPromedio) {
+		i++; //Incrementa el vector circular de rpm.
+		if (i >= muestrasPromedio)
+		{
 			i = 0;
 		}
-		vTaskDelay(20);
+		vTaskDelay(timeMaxQueuePulsos); //Demora obligatoria para que cambie de tarea.
+		//Como tengo una demora maxima de 40ms, puedo medir un minimo de 125 RPM
+		//timeMaxQueuePulsos = 20ms
 
 	}
 
 }
 
-
-static void vLCD_Task(void *pvParameters) {
+static void vLCD_Task(void *pvParameters)
+{
 	//i2c init
 	I2C_ID_T id = I2C2;
 	LCD_Struct datosLcd;
@@ -392,35 +503,12 @@ static void vLCD_Task(void *pvParameters) {
 	lcd_init(id);
 	lcd_clear();
 
-	while (1) {
+	while (1)
+	{
 		xQueueReceive(xQueueLCD, &datosLcd, portMAX_DELAY);
 		lcd_set_cursor(datosLcd.linea, datosLcd.posicion);
 		lcd_string(datosLcd.mensaje);
 	}
-}
-
-static void vPulsadores_Task(void *pvParameters) {
-	//int sentidoDeGiro = 1;
-
-	Chip_GPIOINT_Init(LPC_GPIOINT);
-
-	Chip_IOCON_PinMux(LPC_IOCON, BOTON1, IOCON_MODE_PULLUP, IOCON_FUNC0);
-	Chip_IOCON_PinMux(LPC_IOCON, BOTON2, IOCON_MODE_PULLUP, IOCON_FUNC0);
-	Chip_GPIO_SetPinDIRInput(LPC_GPIO, BOTON2);
-	Chip_GPIO_SetPinDIRInput(LPC_GPIO, BOTON1);
-
-	Chip_GPIOINT_SetIntFalling(LPC_GPIOINT, BOTON2_PORT,
-			(1 << BOTON1_PIN | 1 << BOTON2_PIN));
-
-	NVIC_ClearPendingIRQ(EINT3_IRQn);
-	NVIC_EnableIRQ(EINT3_IRQn);
-
-	vTaskSuspend(NULL);
-
-	while (1) {
-		vTaskDelay(5000);
-	}
-
 }
 
 /*****************************************************************************
@@ -431,18 +519,20 @@ static void vPulsadores_Task(void *pvParameters) {
  * @brief	main routine for FreeRTOS blinky example
  * @return	Nothing, function should not exit
  */
-int main(void) {
+int main(void)
+{
 
 	prvSetupHardware();
 
-	xTaskCreate(vGiro_Task, (char*) "vGiro_Task",configMINIMAL_STACK_SIZE , NULL, PULSOS_TASK_PRIORITY, NULL);
-	xTaskCreate(vPulsos_Task, (char*) "vPulsos_Task", configMINIMAL_STACK_SIZE ,NULL, PULSOS_TASK_PRIORITY, NULL);
-	xTaskCreate(vPulsadores_Task, (char*) "vPulsadores_Task",configMINIMAL_STACK_SIZE , NULL, PULSOS_TASK_PRIORITY, NULL);
+	xTaskCreate(vGiro_Task, (char*) "vGiro_Task", configMINIMAL_STACK_SIZE,
+	NULL, PULSOS_TASK_PRIORITY, NULL);
+	xTaskCreate(vPulsos_Task, (char*) "vPulsos_Task",
+	configMINIMAL_STACK_SIZE * 10, NULL, PULSOS_TASK_PRIORITY, NULL);
 
-	xTaskCreate(vLCD_Task, (char*) "vLCD_Task", configMINIMAL_STACK_SIZE , NULL,LCD_TASK_PRIORITY, NULL);
+	xTaskCreate(vLCD_Task, (char*) "vLCD_Task", configMINIMAL_STACK_SIZE, NULL,
+	LCD_TASK_PRIORITY, NULL);
 
-
-	xQueueLCD = xQueueCreate(5, sizeof(LCD_Struct));
+	xQueueLCD = xQueueCreate(10, sizeof(LCD_Struct));
 	xQueueCapture = xQueueCreate(10, sizeof(unsigned int));
 	xQueueGiro = xQueueCreate(10, sizeof(unsigned int));
 	xQueueVelocidad = xQueueCreate(10, sizeof(unsigned int));
@@ -454,44 +544,55 @@ int main(void) {
 	return 1;
 }
 
-void TIMER3_IRQHandler(void) {
+void TIMER3_IRQHandler(void)
+{
 	unsigned int captura = 0;
 	portBASE_TYPE HigherPriorityTaskWoken = 0;
-	Chip_TIMER_Reset(LPC_TIMER3);
-	if (Chip_TIMER_CapturePending(LPC_TIMER3, 1)) {
-		captura = Chip_TIMER_ReadCapture(LPC_TIMER3, 1);
-		Chip_TIMER_ClearCapture(LPC_TIMER3, 1);
+	Chip_TIMER_Reset(LPC_TIMER3);					//Reseteo contador del timer
+	if (Chip_TIMER_CapturePending(LPC_TIMER3, 1))//Me fijo si hay una captura pendiente
+	{
+		captura = Chip_TIMER_ReadCapture(LPC_TIMER3, 1);	//Leo la captura
+		Chip_TIMER_ClearCapture(LPC_TIMER3, 1);				//Limpio la captura
 
-		NVIC_ClearPendingIRQ(TIMER3_IRQn);
+		NVIC_ClearPendingIRQ(TIMER3_IRQn);		//Limpio la interrupcion en NVIC
 		xQueueSendFromISR(xQueueCapture, &captura, &HigherPriorityTaskWoken);
+		// Envio el dato por cola
 	}
-	if (HigherPriorityTaskWoken) {
+	if (HigherPriorityTaskWoken)	// Hago cambio de contaxto si es necesario
+	{
 		/* Actual macro used here is port specific. */
 		portEND_SWITCHING_ISR(HigherPriorityTaskWoken);
 	}
 
 }
 
-void EINT3_IRQHandler(void) {
+void EINT3_IRQHandler(void)
+{
 	int Pines_IRQ = 0;
 	portBASE_TYPE HigherPriorityTaskWoken = 0;
 	int sentidoDeGiro = 0;
 	Pines_IRQ = Chip_GPIOINT_GetStatusFalling(LPC_GPIOINT, BOTON1_PORT);
-	if (Pines_IRQ & (1 << BOTON1_PIN)) {
+	if (Pines_IRQ & (1 << BOTON1_PIN))
+	{
 		Chip_GPIOINT_ClearIntStatus(LPC_GPIOINT, BOTON1_PORT, 1 << BOTON1_PIN);
 		//xQueueSend(xQueueGiro,&sentidoDeGiro,0);
 		sentidoDeGiro = 1;
 		xQueueSendFromISR(xQueueGiro, &sentidoDeGiro, &HigherPriorityTaskWoken);
-	} else if (Pines_IRQ & (1 << BOTON2_PIN)) {
+	}
+	else if (Pines_IRQ & (1 << BOTON2_PIN))
+	{
 		Chip_GPIOINT_ClearIntStatus(LPC_GPIOINT, BOTON2_PORT, 1 << BOTON2_PIN);
 		sentidoDeGiro = 2;
 		xQueueSendFromISR(xQueueGiro, &sentidoDeGiro, &HigherPriorityTaskWoken);
-	} else {
+	}
+	else
+	{
 		//Limpio todas IRQ
 		Chip_GPIOINT_ClearIntStatus(LPC_GPIOINT, 0, Pines_IRQ);
 	}
 	NVIC_ClearPendingIRQ(EINT3_IRQn);
-	if (HigherPriorityTaskWoken) {
+	if (HigherPriorityTaskWoken)
+	{
 		/* Actual macro used here is port specific. */
 		portEND_SWITCHING_ISR(HigherPriorityTaskWoken);
 	}
